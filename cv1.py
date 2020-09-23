@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
+import random
 
 #FNC
 def sphere(*params):
     z = 0
     for xi in params:
         z +=  xi**2
-
     return z
 
 def schwefel(*params):
@@ -20,7 +20,6 @@ def schwefel(*params):
 
     for xi in params:
         z += xi*np.sin(np.sqrt(np.abs(xi)))
-
     return 418.9829*dim - z
 
 def rosenbrock(*params):
@@ -36,6 +35,7 @@ def rosenbrock(*params):
 
 def rastrigin(*params):
     z = 0
+    dim = len(params)
     for xi in params:
         z += xi**2 - 10*np.cos(2*np.pi*xi)
     return 10*dim + z
@@ -48,7 +48,6 @@ def griewank(*params):
         z += xi**2/4000
         z2 *= np.cos(xi/np.sqrt(counter))
         counter += 1
-
     return z - z2 + 1
 
 def levy(*params):
@@ -72,7 +71,6 @@ def michalewicz(*params):
     for xi in params:
         z += np.sin(xi)*np.sin((counter*xi**2)/np.pi)**(2*10)
         counter += 1
-
     return -z
 
 def zakharov(*params):
@@ -100,68 +98,62 @@ def ackley(*params):
         z += xi**2
         z2 += np.cos(c*xi)
     return -a*np.exp(-b*np.sqrt((1/dim)*z)) -np.exp((1/dim)*z2) + a + np.exp(1)
+#end FNC
 
-'''
-def drawSphere():
+#helper FNC
+def randrange(n, vmin, vmax):
+    return (vmax - vmin)*np.random.rand(n) + vmin
+#end helper FNC
+
+#search algorithm FNC
+def blindSearchMin2D(pointCount, min, max, fnc):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    X = np.linspace(-10, 10, 9)
-    Y = np.linspace(-10, 10, 9)
-
+    vhodnost0 = 1000000
+    argB = 0
+    X = randrange(pointCount, min, max)
+    Y = randrange(pointCount, min, max)
+    xl = X.tolist()
+    yl = Y.tolist()
     X, Y = np.meshgrid(X, Y)
-    Z = sphere(X,Y)
-    print(np.amin(Z))
-    ax.plot_surface(X, Y, Z)
+    Z = fnc(X,Y)
 
-def drawSchwefel():
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    X = np.linspace(-500, 500, 70)
-    Y = np.linspace(-500, 500, 70)
+    for i in range(pointCount):
+        for j in range (pointCount):
+            arg = [xl[i],yl[j]]
+            vhodnost = fnc(arg[0], arg[1])
+            if(vhodnost < vhodnost0):
+                vhodnost0 = vhodnost
+                argB = arg
 
-    X, Y = np.meshgrid(X, Y)
-    Z = schwefel(X, Y)
-    print(np.amin(Z))
-    ax.plot_surface(X, Y, Z)
+    ax.scatter(X, Y, Z, marker='o', alpha=0.2)
+    print(vhodnost0)
+    ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=1)
 
-def drawRosenbrock():
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    X = np.linspace(-10, 10, 20)
-    Y = np.linspace(-10, 10, 20)
-
-    X, Y = np.meshgrid(X, Y)
-    Z = rosenbrock(X, Y)
-    print(np.amin(Z))
-    ax.plot_surface(X, Y, Z)
-'''
+#end search algorithm FNC
 def draw(min, max, fnc):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X = np.linspace(min, max, 200)
+    print(X)
     Y = np.linspace(min, max, 200)
     X,Y = np.meshgrid(X,Y)
+    print(X)
     Z = fnc(X,Y)
     print(np.amin(Z))
     ax.plot_surface(X, Y, Z)
 
-
 #MAIN
-
-'''
-drawRosenbrock()
-drawSchwefel()
-drawSphere()
-'''
-#draw(-10,10,sphere)
-#draw(-10,10,rosenbrock)
-#draw(-500,500,schwefel)
-#draw(-5.12, 5.12,rastrigin)
-#draw(-6,6, griewank)
-#draw(-10,10,levy)
-#draw(0,np.pi,michalewicz)
-#draw(-10,10, zakharov)
-draw(-40.768, 40.768, ackley)
+# draw(-10,10,sphere)
+# draw(-10,10,rosenbrock)
+# draw(-500,500,schwefel)
+# draw(-5.12, 5.12,rastrigin)
+# draw(-6,6, griewank)
+# draw(-10,10,levy)
+# draw(0,np.pi,michalewicz)
+# draw(-10,10, zakharov)
+# draw(-40.768, 40.768, ackley)
+blindSearchMin2D(10, -1000, 1000, sphere)
 
 plt.show()
 
