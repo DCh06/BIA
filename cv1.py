@@ -7,7 +7,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import random
 
-#FNC
+#FNCs
 def sphere(*params):
     z = 0
     for xi in params:
@@ -98,62 +98,59 @@ def ackley(*params):
         z += xi**2
         z2 += np.cos(c*xi)
     return -a*np.exp(-b*np.sqrt((1/dim)*z)) -np.exp((1/dim)*z2) + a + np.exp(1)
-#end FNC
+#end FNCs
 
-#helper FNC
-def randrange(n, vmin, vmax):
-    return (vmax - vmin)*np.random.rand(n) + vmin
-#end helper FNC
-
-#search algorithm FNC
-def blindSearchMin2D(pointCount, min, max, fnc):
+#search algorithm FNCs
+def blindSearchMinVisualization(pointCount, min, max, fnc):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    vhodnost0 = 1000000
     argB = 0
     X = randrange(pointCount, min, max)
     Y = randrange(pointCount, min, max)
     xl = X.tolist()
     yl = Y.tolist()
-    X, Y = np.meshgrid(X, Y)
+    vhodnost0 = fnc(xl[0], yl[0])
     Z = fnc(X,Y)
 
     for i in range(pointCount):
-        for j in range (pointCount):
-            arg = [xl[i],yl[j]]
-            vhodnost = fnc(arg[0], arg[1])
-            if(vhodnost < vhodnost0):
-                vhodnost0 = vhodnost
-                argB = arg
+        arg = [xl[i],yl[i]]
+        vhodnost = fnc(arg[0], arg[1])
+        if(vhodnost < vhodnost0):
+            vhodnost0 = vhodnost
+            argB = arg
+            ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=0.5, c="#ff0000")
 
-    ax.scatter(X, Y, Z, marker='o', alpha=0.2)
+    ax.scatter(X, Y, Z, marker='o', alpha=0.05, c="#0000ff")
     print(vhodnost0)
-    ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=1)
-
+    ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=1, s=70)
 #end search algorithm FNC
+
+#additional FNC
 def draw(min, max, fnc):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X = np.linspace(min, max, 200)
-    print(X)
     Y = np.linspace(min, max, 200)
     X,Y = np.meshgrid(X,Y)
-    print(X)
     Z = fnc(X,Y)
     print(np.amin(Z))
     ax.plot_surface(X, Y, Z)
+
+def randrange(n, vmin, vmax):
+    return (vmax - vmin)*np.random.rand(n) + vmin
+#end additional FNC
 
 #MAIN
 # draw(-10,10,sphere)
 # draw(-10,10,rosenbrock)
 # draw(-500,500,schwefel)
-# draw(-5.12, 5.12,rastrigin)
+draw(-5.12, 5.12,rastrigin)
 # draw(-6,6, griewank)
 # draw(-10,10,levy)
 # draw(0,np.pi,michalewicz)
 # draw(-10,10, zakharov)
 # draw(-40.768, 40.768, ackley)
-blindSearchMin2D(10, -1000, 1000, sphere)
+blindSearchMinVisualization(1000, -5.12, 5.12,rastrigin)
 
 plt.show()
 
