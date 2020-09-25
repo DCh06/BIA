@@ -1,157 +1,178 @@
-#This import registers the 3D projection, but is otherwise unused.
+# This import registers the 3D projection, but is otherwise unused.
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
+import matplotlib.animation as animation
+import mpl_toolkits.mplot3d.axes3d as p3
 import random
 
-#FNCs
-def sphere(*params):
-    z = 0
-    for xi in params:
-        z +=  xi**2
-    return z
 
-def schwefel(*params):
-    z = 0
-    dim = len(params)
+class Solution:
+    def __init__(self, dimension, lower_bound, upper_bound):
+        self.dimension = dimension
+        self.lB = lower_bound  # we will use the same bounds for all parameters
+        self.uB = upper_bound
+        self.parameters = np.zeros(self.dimension)  # solution parameters
+        self.f = np.inf  # objective function evaluation
 
-    for xi in params:
-        z += xi*np.sin(np.sqrt(np.abs(xi)))
-    return 418.9829*dim - z
+    def blindSearch(self, point_count, fnc):
+        argBest = []
+        vhodnostList = []
+        params = []
+        for x in range(self.dimension):
+            params.append(self.randrange(point_count, self.lB, self.uB))
+        vhodnost0 = self.f
+        for i in range(point_count):
+            arg = []
+            for param in params:
+                arg.append(param[i])
 
-def rosenbrock(*params):
-    z = 0
-    counter = 0
-    dim = len(params)
-    for xi in params:
-        counter += 1
-        z += 100*(params[counter]-xi**2)**2 + (xi-1)**2
-        if(counter == dim -1):
-            break
-    return z
+            vhodnost = fnc(arg)
+            if (vhodnost < vhodnost0):
+                vhodnost0 = vhodnost
+                vhodnostList.append(vhodnost)
+                argBest.append(arg)
 
-def rastrigin(*params):
-    z = 0
-    dim = len(params)
-    for xi in params:
-        z += xi**2 - 10*np.cos(2*np.pi*xi)
-    return 10*dim + z
+        if(self.dimension == 2):
+            self.blindSearchMinVisualization(argBest,vhodnostList,fnc)
+        return vhodnost0
 
-def griewank(*params):
-    counter = 1
-    z = 0
-    z2 = 1
-    for xi in params:
-        z += xi**2/4000
-        z2 *= np.cos(xi/np.sqrt(counter))
-        counter += 1
-    return z - z2 + 1
+    def updatePoints(self,n,x,y,z, point):
+        print(n)
+        point.set_data(np.array([x[n], y[n]]))
+        point.set_3d_properties(z[n], 'z')
+        return point
 
-def levy(*params):
-    def w(x):
-        return 1 + (x - 1) / 4
+    def blindSearchMinVisualization(self,points, z, fnc):
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
 
-    dim = len(params)
-    z = 0
-    counter = 0
-    for xi in params:
-        z += ( w(xi) - 1)**2 * (1 + 10*np.sin(np.pi*w(xi)+1)**2) + (w(params[dim-1])-1)**2 * (1 + np.sin(2*np.pi * w(params[dim-1]))**2)
-        counter += 1
-        if(counter >= dim - 1):
-            break
-    return np.sin(np.pi * w(params[0])) ** 2 + z
+        x = []
+        y = []
+        self.draw(self.lB, self.uB, fnc, ax)
+        for i in range(len(points)):
+            x.append(points[i][0])
+            y.append(points[i][1])
+        point, = ax.plot(x[0], y[0], z[0], '^')
+        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=500, fargs=(x, y, z, point))
+        plt.show()
 
-def michalewicz(*params):
-    m = 10
-    z = 0
-    counter = 1
-    for xi in params:
-        z += np.sin(xi)*np.sin((counter*xi**2)/np.pi)**(2*10)
-        counter += 1
-    return -z
+    def draw(self, min, max, fnc, ax):
+        X = np.linspace(min, max, 200)
+        Y = np.linspace(min, max, 200)
+        X, Y = np.meshgrid(X, Y)
+        Z = fnc([X, Y])
+        ax.plot_surface(X, Y, Z, alpha=0.4)
 
-def zakharov(*params):
-    z = 0
-    z2 = 0
-    z3 = 0
-    counter = 1
+    def randrange(self, n, vmin, vmax):
+        return (vmax - vmin) * np.random.rand(n) + vmin
 
-    for xi in params:
-        z += xi**2
-        z2 += (0.5*counter*xi)
-        z3 += (0.5*counter*xi)
-        counter += 1
-    return z + z2**2 + z3**4
+class Function:
+    def __init__(self, name):
+        self.name = name
 
-def ackley(*params):
-    a = 20
-    b = 0.3
-    c = np.pi/3
-    z = 0
-    z2 = 0
-    dim = len(params)
+    def sphere(self, params):
+        z = 0
+        for xi in params:
+            z += xi ** 2
+        return z
 
-    for xi in params:
-        z += xi**2
-        z2 += np.cos(c*xi)
-    return -a*np.exp(-b*np.sqrt((1/dim)*z)) -np.exp((1/dim)*z2) + a + np.exp(1)
-#end FNCs
+    def schwefel(self, params):
+        z = 0
+        dim = len(params)
 
-#search algorithm FNCs
-def blindSearchMinVisualization(pointCount, min, max, fnc):
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    argB = 0
-    X = randrange(pointCount, min, max)
-    Y = randrange(pointCount, min, max)
-    xl = X.tolist()
-    yl = Y.tolist()
-    vhodnost0 = fnc(xl[0], yl[0])
-    Z = fnc(X,Y)
+        for xi in params:
+            z += xi * np.sin(np.sqrt(np.abs(xi)))
+        return 418.9829 * dim - z
 
-    for i in range(pointCount):
-        arg = [xl[i],yl[i]]
-        vhodnost = fnc(arg[0], arg[1])
-        if(vhodnost < vhodnost0):
-            vhodnost0 = vhodnost
-            argB = arg
-            ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=0.5, c="#ff0000")
+    def rosenbrock(self, params):
+        z = 0
+        counter = 0
+        dim = len(params)
+        for xi in params:
+            counter += 1
+            z += 100 * (params[counter] - xi ** 2) ** 2 + (xi - 1) ** 2
+            if (counter == dim - 1):
+                break
+        return z
 
-    ax.scatter(X, Y, Z, marker='o', alpha=0.05, c="#0000ff")
-    print(vhodnost0)
-    ax.scatter(argB[0], argB[1], vhodnost0, marker='^', alpha=1, s=70)
-#end search algorithm FNC
+    def rastrigin(self, params):
+        z = 0
+        dim = len(params)
+        for xi in params:
+            z += xi ** 2 - 10 * np.cos(2 * np.pi * xi)
+        return 10 * dim + z
 
-#additional FNC
-def draw(min, max, fnc):
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    X = np.linspace(min, max, 200)
-    Y = np.linspace(min, max, 200)
-    X,Y = np.meshgrid(X,Y)
-    Z = fnc(X,Y)
-    print(np.amin(Z))
-    ax.plot_surface(X, Y, Z)
+    def griewank(self, params):
+        counter = 1
+        z = 0
+        z2 = 1
+        for xi in params:
+            z += xi ** 2 / 4000
+            z2 *= np.cos(xi / np.sqrt(counter))
+            counter += 1
+        return z - z2 + 1
 
-def randrange(n, vmin, vmax):
-    return (vmax - vmin)*np.random.rand(n) + vmin
-#end additional FNC
+    def levy(self, params):
+        def w(x):
+            return 1 + (x - 1) / 4
 
-#MAIN
-# draw(-10,10,sphere)
-# draw(-10,10,rosenbrock)
-# draw(-500,500,schwefel)
-draw(-5.12, 5.12,rastrigin)
-# draw(-6,6, griewank)
-# draw(-10,10,levy)
-# draw(0,np.pi,michalewicz)
-# draw(-10,10, zakharov)
-# draw(-40.768, 40.768, ackley)
-blindSearchMinVisualization(1000, -5.12, 5.12,rastrigin)
+        dim = len(params)
+        z = 0
+        counter = 0
+        for xi in params:
+            z += (w(xi) - 1) ** 2 * (1 + 10 * np.sin(np.pi * w(xi) + 1) ** 2) + (w(params[dim - 1]) - 1) ** 2 * (
+                        1 + np.sin(2 * np.pi * w(params[dim - 1])) ** 2)
+            counter += 1
+            if (counter >= dim - 1):
+                break
+        return np.sin(np.pi * w(params[0])) ** 2 + z
 
-plt.show()
+    def michalewicz(self, params):
+        m = 10
+        z = 0
+        counter = 1
+        for xi in params:
+            z += np.sin(xi) * np.sin((counter * xi ** 2) / np.pi) ** (2 * 10)
+            counter += 1
+        return -z
+
+    def zakharov(self, params):
+        z = 0
+        z2 = 0
+        z3 = 0
+        counter = 1
+
+        for xi in params:
+            z += xi ** 2
+            z2 += (0.5 * counter * xi)
+            z3 += (0.5 * counter * xi)
+            counter += 1
+        return z + z2 ** 2 + z3 ** 4
+
+    def ackley(self, params):
+        a = 20
+        b = 0.3
+        c = np.pi / 3
+        z = 0
+        z2 = 0
+        dim = len(params)
+
+        for xi in params:
+            z += xi ** 2
+            z2 += np.cos(c * xi)
+        return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
+
+# MAIN
+solution = Solution(2,-100,100)
+fnc = Function("")
+
+solution.blindSearch(1000, fnc.ackley)
+
+
+
+
 
 
