@@ -17,18 +17,58 @@ class Solution:
         self.parameters = np.zeros(self.dimension)  # solution parameters
         self.f = np.inf  # objective function evaluation
 
+    def hillClimb(self, point_count, fnc, numOfNeighbours):
+        argBest = []
+        vhodnostList = []
+        params = []
+        arg = []
+        # params = self.generateNeighbours([random.uniform( self.lB, self.uB), random.uniform(self.lB, self.uB)],numOfNeighbours)
+        params = self.generateNeighbours([4,4],numOfNeighbours)
+
+        vhodnost0 = self.f
+        for i in range(point_count):
+            arg = []
+            arg2 = []
+            for x in range(numOfNeighbours):
+                arg2 = []
+                for param in params:
+                    arg2.append(param[x])
+                arg.append(arg2)
+
+            for argxy in arg:
+                vhodnost = fnc(argxy)
+                if (vhodnost < vhodnost0):
+                    vhodnost0 = vhodnost
+                    vhodnostList.append(vhodnost)
+                    argBest.append(argxy)
+            params = self.generateNeighbours(argBest[len(argBest) - 1], numOfNeighbours)
+
+        if (self.dimension == 2):
+            self.blindSearchMinVisualization(argBest, vhodnostList, fnc)
+        return vhodnost0
+
+    def generateNeighbours(self, param, num):
+        p = []
+        for xi in param:
+            pi = []
+            for i in range(num):
+                pi.append(np.random.normal(xi, 0.5))
+            p.append(pi)
+        return p
+
     def blindSearch(self, point_count, fnc):
         argBest = []
         vhodnostList = []
         params = []
         for x in range(self.dimension):
             params.append(self.randrange(point_count, self.lB, self.uB))
+
         vhodnost0 = self.f
         for i in range(point_count):
             arg = []
             for param in params:
                 arg.append(param[i])
-
+                #
             vhodnost = fnc(arg)
             if (vhodnost < vhodnost0):
                 vhodnost0 = vhodnost
@@ -40,7 +80,6 @@ class Solution:
         return vhodnost0
 
     def updatePoints(self,n,x,y,z, point):
-        print(n)
         point.set_data(np.array([x[n], y[n]]))
         point.set_3d_properties(z[n], 'z')
         return point
@@ -48,9 +87,9 @@ class Solution:
     def blindSearchMinVisualization(self,points, z, fnc):
         fig = plt.figure()
         ax = p3.Axes3D(fig)
-
         x = []
         y = []
+
         self.draw(self.lB, self.uB, fnc, ax)
         for i in range(len(points)):
             x.append(points[i][0])
@@ -64,7 +103,7 @@ class Solution:
         Y = np.linspace(min, max, 200)
         X, Y = np.meshgrid(X, Y)
         Z = fnc([X, Y])
-        ax.plot_surface(X, Y, Z, alpha=0.4)
+        ax.plot_surface(X, Y, Z, alpha=0.2)
 
     def randrange(self, n, vmin, vmax):
         return (vmax - vmin) * np.random.rand(n) + vmin
@@ -166,10 +205,10 @@ class Function:
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
 # MAIN
-solution = Solution(2,-100,100)
+solution = Solution(2,-5,5)
 fnc = Function("")
-
-solution.blindSearch(1000, fnc.ackley)
+# solution.blindSearch(522, fnc.sphere)
+solution.hillClimb(522, fnc.sphere, 5)
 
 
 
