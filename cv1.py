@@ -17,18 +17,20 @@ class Solution:
         self.parameters = np.zeros(self.dimension)  # solution parameters
         self.f = np.inf  # objective function evaluation
 
-    def hillClimb(self, point_count, fnc, numOfNeighbours):
+    def hillClimb(self, point_count, fnc, numOfNeighbours, sigma):
         argBest = []
         vhodnostList = []
         params = []
         arg = []
-        # params = self.generateNeighbours([random.uniform( self.lB, self.uB), random.uniform(self.lB, self.uB)],numOfNeighbours)
-        params = self.generateNeighbours([4,4],numOfNeighbours)
-
+        params = self.generateNeighbours([self.uB,self.uB],numOfNeighbours, sigma)
         vhodnost0 = self.f
+
+        #number of iteration in search
         for i in range(point_count):
             arg = []
             arg2 = []
+
+            #to get [xi,yi] from [x1..xn] [y1..yn]
             for x in range(numOfNeighbours):
                 arg2 = []
                 for param in params:
@@ -41,18 +43,18 @@ class Solution:
                     vhodnost0 = vhodnost
                     vhodnostList.append(vhodnost)
                     argBest.append(argxy)
-            params = self.generateNeighbours(argBest[len(argBest) - 1], numOfNeighbours)
+            params = self.generateNeighbours(argBest[len(argBest) - 1], numOfNeighbours, sigma)
 
         if (self.dimension == 2):
-            self.blindSearchMinVisualization(argBest, vhodnostList, fnc)
+            self.searchMinVisualization(argBest, vhodnostList, fnc)
         return vhodnost0
 
-    def generateNeighbours(self, param, num):
+    def generateNeighbours(self, param, num, sigma):
         p = []
         for xi in param:
             pi = []
             for i in range(num):
-                pi.append(np.random.normal(xi, 0.5))
+                pi.append(np.random.normal(xi, sigma))
             p.append(pi)
         return p
 
@@ -76,7 +78,7 @@ class Solution:
                 argBest.append(arg)
 
         if(self.dimension == 2):
-            self.blindSearchMinVisualization(argBest,vhodnostList,fnc)
+            self.searchMinVisualization(argBest,vhodnostList,fnc)
         return vhodnost0
 
     def updatePoints(self,n,x,y,z, point):
@@ -84,7 +86,7 @@ class Solution:
         point.set_3d_properties(z[n], 'z')
         return point
 
-    def blindSearchMinVisualization(self,points, z, fnc):
+    def searchMinVisualization(self,points, z, fnc):
         fig = plt.figure()
         ax = p3.Axes3D(fig)
         x = []
@@ -205,10 +207,10 @@ class Function:
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
 # MAIN
-solution = Solution(2,-5,5)
+solution = Solution(2,-4,4)
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
-solution.hillClimb(522, fnc.sphere, 5)
+solution.hillClimb(522, fnc.sphere, 5, 0.5)
 
 
 
