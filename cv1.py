@@ -17,12 +17,42 @@ class Solution:
         self.parameters = np.zeros(self.dimension)  # solution parameters
         self.f = np.inf  # objective function evaluation
 
+    def similatedAnnealing(self,fnc, T0,Tmin,alpha, sigma):
+        T = T0
+        argBest = []
+        vhodnostList = []
+        x = []
+        for i in range(self.dimension):
+            x.append(np.random.uniform(self.lB, self.uB))
+
+        while T > Tmin:
+            x1 = np.random.normal(x, sigma)
+            if(fnc(x1) < fnc(x)):
+                x = x1
+                argBest.append(x)
+                vhodnostList.append(fnc(x))
+            else:
+                r = np.random.uniform(0,1)
+                if(r < np.e**(-(fnc(x1)-fnc(x))/T)):
+                    argBest.append(x)
+                    vhodnostList.append(fnc(x))
+                    x = x1
+            T = T*alpha
+
+        if (self.dimension == 2):
+            self.searchMinVisualization(argBest, vhodnostList, fnc)
+        return fnc(x)
+
     def hillClimb(self, point_count, fnc, numOfNeighbours, sigma):
         argBest = []
         vhodnostList = []
+        dims = []
         params = []
         arg = []
-        params = self.generateNeighbours([self.uB,self.uB],numOfNeighbours, sigma)
+        for i in range(self.dimension):
+            dims.append(self.uB)
+
+        params = self.generateNeighbours(dims,numOfNeighbours, sigma)
         vhodnost0 = self.f
 
         #number of iteration in search
@@ -97,7 +127,7 @@ class Solution:
             x.append(points[i][0])
             y.append(points[i][1])
         point, = ax.plot(x[0], y[0], z[0], '^')
-        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=500, fargs=(x, y, z, point))
+        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=50, fargs=(x, y, z, point), repeat=False)
         plt.show()
 
     def draw(self, min, max, fnc, ax):
@@ -210,7 +240,8 @@ class Function:
 solution = Solution(2,-4,4)
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
-solution.hillClimb(522, fnc.sphere, 5, 0.5)
+# solution.hillClimb(522, fnc.sphere, 5, 0.5)
+print(solution.similatedAnnealing(fnc.sphere,100,0.5,0.95,0.5))
 
 
 
