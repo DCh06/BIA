@@ -16,23 +16,26 @@ class Solution:
         self.f = np.inf  # objective function evaluation
 
     def similatedAnnealing(self,fnc, T0,Tmin,alpha, sigma):
+        def check(list1):
+            for x in list1:
+                if x < self.lB or x > self.uB:
+                    return False
+            return True
+
         T = T0
         argBest = []
         vhodnostList = []
+
         x = []
         for i in range(self.dimension):
             x.append(np.random.uniform(self.lB, self.uB))
 
         while T > Tmin:
             generated_x = np.random.normal(x, sigma)
-
-            if generated_x.all() > self.lB and generated_x.all() < self.uB:
+            if check(generated_x):
                 x1 = generated_x
-                print(generated_x)
             else:
                 continue
-                print("skipping")
-
 
             if(fnc(x1) < fnc(x)):
                 x = x1
