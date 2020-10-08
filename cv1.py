@@ -6,8 +6,6 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
-import random
-
 
 class Solution:
     def __init__(self, dimension, lower_bound, upper_bound):
@@ -26,17 +24,26 @@ class Solution:
             x.append(np.random.uniform(self.lB, self.uB))
 
         while T > Tmin:
-            x1 = np.random.normal(x, sigma)
+            generated_x = np.random.normal(x, sigma)
+
+            if generated_x.all() > self.lB and generated_x.all() < self.uB:
+                x1 = generated_x
+                print(generated_x)
+            else:
+                continue
+                print("skipping")
+
+
             if(fnc(x1) < fnc(x)):
                 x = x1
                 argBest.append(x)
                 vhodnostList.append(fnc(x))
             else:
-                r = np.random.uniform(0,1)
+                r = np.random.uniform()
                 if(r < np.e**(-(fnc(x1)-fnc(x))/T)):
+                    x = x1
                     argBest.append(x)
                     vhodnostList.append(fnc(x))
-                    x = x1
             T = T*alpha
 
         if (self.dimension == 2):
@@ -237,11 +244,13 @@ class Function:
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
 # MAIN
-solution = Solution(2,-4,4)
+solution = Solution(2,-10,10)
+# solution = Solution(2,-100,100)
+
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
 # solution.hillClimb(522, fnc.sphere, 5, 0.5)
-print(solution.similatedAnnealing(fnc.sphere,100,0.5,0.95,0.5))
+print(solution.similatedAnnealing(fnc.sphere, 100, 0.5, 0.98, 0.5))
 
 
 
