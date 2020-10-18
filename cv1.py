@@ -253,7 +253,7 @@ solution = Solution(2,-10,10)
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
 # solution.hillClimb(522, fnc.sphere, 5, 0.5)
-print(solution.similatedAnnealing(fnc.sphere, 100, 0.5, 0.98, 0.5))
+print(solution.similatedAnnealing(fnc.sphere, 100, 0.5, 0.95, 0.5))
 
 
 
