@@ -4,14 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-
 class City:
     def __init__(self, city_name):
         self.city_name = city_name
         self.x = random.uniform(0, 500)
         self.y = random.uniform(0, 500)
-
-
 
 class Solution:
     def __init__(self, NP, G, D):
@@ -27,7 +24,6 @@ class Solution:
         self.population = self.__generate_population()
         self.new_population = []
         self.best_solution_of_generations = []
-
 
     def __generate_cities(self):
         return_cities = []
@@ -77,9 +73,7 @@ class Solution:
         while (random_2 == random_1):
             random_2 = random.randint(0, self.D - 1)
 
-        temp = offspring_AB[random_1]
-        offspring_AB[random_1] = offspring_AB[random_2]
-        offspring_AB[random_2] = temp
+        offspring_AB[random_1], offspring_AB[random_2] = offspring_AB[random_2], offspring_AB[random_1]
         return offspring_AB
 
     def __get_best_in_generation(self):
@@ -110,12 +104,11 @@ class Solution:
         ax.scatter(best_xs[0], best_ys[0])
 
         for c in self.generated_cities:
-            print(c.city_name)
             plt.annotate(c.city_name, (c.x, c.y), textcoords="offset points", xytext=(0, 10))
 
         line, = ax.plot(best_xs[0], best_ys[0])
-        animate = FuncAnimation(fig, self.animate, len(best_xs), fargs=(best_xs,best_ys, line), interval=500,
-                                      repeat=True)
+        animate = FuncAnimation(fig, self.animate, len(best_xs), fargs=(best_xs,best_ys, line), interval=300,
+                                      repeat=False)
         plt.show()
 
     def genetic_algorithm(self):
@@ -142,11 +135,12 @@ class Solution:
             try_min = self.__get_distance(self.__get_best_in_generation())
             if(minimum > try_min):
                 minimum = try_min
+                print(i)
                 self.best_solution_of_generations.append(self.__get_best_in_generation())
 
 
 #MAIN
-solution = Solution(20,200,20)
+solution = Solution(20,1000,10)
 solution.genetic_algorithm()
 solution.animateSolution()
 
