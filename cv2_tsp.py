@@ -54,6 +54,7 @@ class Solution:
 
     def __crossover(self, parentA, parentB):
         return_offspring = []
+        # random ne v pulce fix
         for i in range(int(len(parentA)/2)):
             return_offspring.append(parentA[i])
         for i in range(len(parentB)):
