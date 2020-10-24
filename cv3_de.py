@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
 
 class Solution:
-    def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles):#np = 4, gmax = 10
+    def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles):
         self.dimension = dimension
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -58,12 +58,12 @@ class Solution:
         for i in range(len(best_xxs[0])):
             point, = ax.plot(best_xxs[i][0], best_yys[i][0], best_zzs[i][0], 'o')
             points.append(point)
-        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=300,
+        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=30,
                                           repeat=False)
         plt.show()
 
     def differential_evolution(self, fnc):
-        def adjust(vector):
+        def take_care_for_boundaries(vector):
             for i in range(len(vector)):
                 if(vector[i] > self.uB):
                     vector[i] = self.uB
@@ -75,8 +75,8 @@ class Solution:
         g = 0
 
         while g < self.g_maxim:
-            new_pop = copy.deepcopy(pop)  # new generation
-            for i, x in enumerate(pop):  # x is also denoted as a target vector
+            new_pop = copy.deepcopy(pop)
+            for i, x in enumerate(pop):
                 r1,r2,r3 = 0,0,0
                 while True:
                     r1 = np.random.randint(0, self.NP)
@@ -91,32 +91,28 @@ class Solution:
                     if (r3 != i and r3 != r1 and r3 != r2):
                         break
 
-                # v = np.add((map(lambda k: k * self.F, (np.subtract(pop[r1], pop[r2])))) + pop[r3])  # mutation vector. TAKE CARE FOR BOUNDARIES!
                 p = (np.subtract(pop[r1], pop[r2]))
                 map(lambda k: k * self.F, p)
                 v = np.add(p, pop[r3])
-                adjust(v)
+                take_care_for_boundaries(v)
 
                 u = np.zeros(self.dimension)  # trial vector
                 j_rnd = np.random.randint(0, self.dimension)
 
                 for j in range(self.dimension):
                     if np.random.uniform() < self.CR or j == j_rnd:
-                        u[j] = v[j]  # at least 1 parameter should be from a mutation vector v
+                        u[j] = v[j]
                     else:
                         u[j] = pop[i][j]
 
                 f_u = fnc(u)
 
-                if f_u <= fnc(pop[i]):  # We always accept a solution with the same fitness as a target vector
+                if f_u <= fnc(pop[i]):
                     new_pop[i] = u
             pop = new_pop
             draw_evolution.append(new_pop)
             g += 1
 
-        # if (self.dimension == 2):
-        #     self.searchMinVisualization(argBest, vhodnostList, fnc)
-        # return fnc(x)
         if(self.dimension == 2):
             self.animateSolution(draw_evolution,fnc)
         return pop
@@ -127,51 +123,8 @@ class Solution:
             pi = []
             for i in range(self.dimension):
                 pi.append(np.random.uniform(self.lB,self.uB))
-
             p.append(pi)
         return p
-
-    def blindSearch(self, point_count, fnc):
-        argBest = []
-        vhodnostList = []
-        params = []
-        for x in range(self.dimension):
-            params.append(self.randrange(point_count, self.lB, self.uB))
-
-        vhodnost0 = self.f
-        for i in range(point_count):
-            arg = []
-            for param in params:
-                arg.append(param[i])
-                #
-            vhodnost = fnc(arg)
-            if (vhodnost < vhodnost0):
-                vhodnost0 = vhodnost
-                vhodnostList.append(vhodnost)
-                argBest.append(arg)
-
-        if(self.dimension == 2):
-            self.searchMinVisualization(argBest,vhodnostList,fnc)
-        return vhodnost0
-
-    def updatePoints(self,n,x,y,z, point):
-        point.set_data(np.array([x[n], y[n]]))
-        point.set_3d_properties(z[n], 'z')
-        return point
-
-    def searchMinVisualization(self,points, z, fnc):
-        fig = plt.figure()
-        ax = p3.Axes3D(fig)
-        x = []
-        y = []
-
-        self.draw(self.lB, self.uB, fnc, ax)
-        for i in range(len(points)):
-            x.append(points[i][0])
-            y.append(points[i][1])
-        point, = ax.plot(x[0], y[0], z[0], '^')
-        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=200, fargs=(x, y, z, point), repeat=False)
-        plt.show()
 
     def draw(self, min, max, fnc, ax):
         X = np.linspace(min, max, 200)
@@ -278,13 +231,11 @@ class Function:
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
 # MAIN
-solution = Solution(2,-10,10,20,200)
-# solution = Solution(2,-100,100)
 
+
+solution = Solution(2,-10,10,4,400)
 fnc = Function("")
-# solution.blindSearch(522, fnc.sphere)
-# solution.hillClimb(522, fnc.sphere, 5, 0.5)
-print(solution.differential_evolution(fnc.schwefel))
+solution.differential_evolution(fnc.sphere)
 
 
 
