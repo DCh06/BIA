@@ -22,48 +22,45 @@ class Solution:
         self.parameters = np.zeros(self.dimension)  # solution parameters
         self.f = np.inf  # objective function evaluation
 
-    def animate(self, i, best_xs, best_ys, line):
-        x = best_xs[i]
-        y = best_ys[i]
-        line.set_xdata(x)
-        line.set_ydata(y)
+    def animate(self, i, best_xxs, best_yys, best_zzs, points):
+        for j in range(len(best_xxs[0])):
+            x = best_xxs[i][j]
+            y = best_yys[i][j]
+            z = best_zzs[i][j]
+
+            points[j].set_data(np.array([x, y]))
+            points[j].set_3d_properties(z, 'z')
+        return points
 
     def animateSolution(self, best_solutions, fnc):
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
+
         best_xxs = []
         best_yys = []
         best_zzs = []
+        points = []
+
         for best_solution in best_solutions:
             best_xs = []
             best_ys = []
             best_zs = []
-            for x,y in best_solution:
-                best_xs.append(x)
-                best_ys.append(y)
-                best_zs.append(fnc(x,y))
+            for i in range(len(best_solution)):
+                best_xs.append(best_solution[i][0])
+                best_ys.append(best_solution[i][1])
+                best_zs.append(fnc([best_solution[i][0], best_solution[i][1]]))
+            best_xxs.append(best_xs)
+            best_yys.append(best_ys)
+            best_zzs.append(best_zs)
 
-
-
-            exit()
-
-        # for best_solution in best_solutions:
-        #     print(best_solution)
-        #     ys = [best_solution[i][1] for i in range(len(best_solution))]
-        #     xs = [best_solution[i][0] for i in range(len(best_solution))]
-        #     ys.append(best_solution[0][1])
-        #     xs.append(best_solution[0][0])
-        #     best_xs.append(xs)
-        #     best_ys.append(ys)
-
-        # ax.scatter(best_xs[0], best_ys[0])
-        #
-        # for c in self.generated_cities:
-        #     plt.annotate(c.city_name, (c.x, c.y), textcoords="offset points", xytext=(0, 10))
-        #
-        # point, = ax.plot(best_xs[0], best_ys[0])
-        # animate = animation.FuncAnimation(fig, self.animate, len(best_xs), fargs=(best_xs, best_ys, point), interval=300,
-        #                                   repeat=False)
-        # plt.show()
+        self.draw(self.lB, self.uB, fnc, ax)
+        # ax.scatter(range(self.lB), range(self.uB))
+        for i in range(len(best_xxs[0])):
+            point, = ax.plot(best_xxs[i][0], best_yys[i][0], best_zzs[i][0], 'o')
+            points.append(point)
+        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=300,
+                                          repeat=False)
+        plt.show()
 
     def differential_evolution(self, fnc):
         def check(list1):
@@ -121,42 +118,6 @@ class Solution:
             self.animateSolution(draw_evolution,fnc)
         return pop
 
-    def hillClimb(self, point_count, fnc, numOfNeighbours, sigma):
-        argBest = []
-        vhodnostList = []
-        dims = []
-        params = []
-        arg = []
-        for i in range(self.dimension):
-            dims.append(self.uB)
-
-        params = self.generateNeighbours(dims,numOfNeighbours, sigma)
-        vhodnost0 = self.f
-
-        #number of iteration in search
-        for i in range(point_count):
-            arg = []
-            arg2 = []
-
-            #to get [xi,yi] from [x1..xn] [y1..yn]
-            for x in range(numOfNeighbours):
-                arg2 = []
-                for param in params:
-                    arg2.append(param[x])
-                arg.append(arg2)
-
-            for argxy in arg:
-                vhodnost = fnc(argxy)
-                if (vhodnost < vhodnost0):
-                    vhodnost0 = vhodnost
-                    vhodnostList.append(vhodnost)
-                    argBest.append(argxy)
-            params = self.generateNeighbours(argBest[len(argBest) - 1], numOfNeighbours, sigma)
-
-        if (self.dimension == 2):
-            self.searchMinVisualization(argBest, vhodnostList, fnc)
-        return vhodnost0
-
     def generateNeighboursUniform(self):
         p = []
         for xi in range(self.NP):
@@ -206,7 +167,7 @@ class Solution:
             x.append(points[i][0])
             y.append(points[i][1])
         point, = ax.plot(x[0], y[0], z[0], '^')
-        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=50, fargs=(x, y, z, point), repeat=False)
+        line_ani = animation.FuncAnimation(fig, self.updatePoints, len(x),interval=200, fargs=(x, y, z, point), repeat=False)
         plt.show()
 
     def draw(self, min, max, fnc, ax):
@@ -320,7 +281,7 @@ solution = Solution(2,-10,10,20,200)
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
 # solution.hillClimb(522, fnc.sphere, 5, 0.5)
-print(solution.differential_evolution(fnc.sphere))
+print(solution.differential_evolution(fnc.ackley))
 
 
 
