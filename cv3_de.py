@@ -63,11 +63,13 @@ class Solution:
         plt.show()
 
     def differential_evolution(self, fnc):
-        def check(list1):
-            for x in list1:
-                if x < self.lB or x > self.uB:
-                    return False
-            return True
+        def adjust(vector):
+            for i in range(len(vector)):
+                if(vector[i] > self.uB):
+                    vector[i] = self.uB
+                elif (vector[i] < self.lB):
+                    vector[i] = self.lB
+
         draw_evolution = []
         pop = self.generateNeighboursUniform()
         g = 0
@@ -93,6 +95,7 @@ class Solution:
                 p = (np.subtract(pop[r1], pop[r2]))
                 map(lambda k: k * self.F, p)
                 v = np.add(p, pop[r3])
+                adjust(v)
 
                 u = np.zeros(self.dimension)  # trial vector
                 j_rnd = np.random.randint(0, self.dimension)
@@ -281,7 +284,7 @@ solution = Solution(2,-10,10,20,200)
 fnc = Function("")
 # solution.blindSearch(522, fnc.sphere)
 # solution.hillClimb(522, fnc.sphere, 5, 0.5)
-print(solution.differential_evolution(fnc.ackley))
+print(solution.differential_evolution(fnc.schwefel))
 
 
 
