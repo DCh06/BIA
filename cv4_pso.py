@@ -19,8 +19,8 @@ class Solution:
         self.M_max = number_of_gen_cycles
         self.c1 = 2
         self.c2 = 2
-        self.v_mini = -5
-        self.v_maxi = 5
+        self.v_mini = -2
+        self.v_maxi = 2
         self.f = np.inf
 
     def animate(self, i, best_xxs, best_yys, best_zzs, points):
@@ -58,30 +58,29 @@ class Solution:
         for i in range(len(best_xxs[0])):
             point, = ax.plot([best_xxs[i][0]], [best_yys[i][0]], [best_zzs[i][0]], 'o')
             points.append(point)
-        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=30,
+        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=80,
                                           repeat=False)
         plt.show()
 
     def particle_swarm(self, fnc):
-
         swarm = self.generatePopulationUniform()
         gBest = self.getPersonalBest(swarm, fnc)
-        pBest = copy.deepcopy(gBest)
+        pBest = copy.deepcopy(swarm)
         velocity = self.generateSwarmVelocity()
         swarmSolution = []
         m = 0
 
         while m < self.M_max:
             for i in range(len(swarm)):
-                calculatedVelocity = self.recalculateParticleVelocity(velocity[i], swarm[i], pBest, gBest, m)
+                calculatedVelocity = self.recalculateParticleVelocity(velocity[i], swarm[i], pBest[i], gBest, m)
                 velocity[i] = self.fixBoundaries(calculatedVelocity,self.v_mini, self.v_maxi)
                 calculatedPosition = np.add(swarm[i], velocity[i])
                 swarm[i] = self.fixBoundaries(calculatedPosition,self.lB, self.uB)
 
-                if(fnc(swarm[i]) < fnc(pBest)):
-                    pBest = swarm[i]
-                    if(fnc(pBest) < fnc(gBest)):
-                        gBest = pBest
+                if(fnc(swarm[i]) < fnc(pBest[i])):
+                    pBest[i] = copy.deepcopy(swarm[i])
+                    if(fnc(pBest[i]) < fnc(gBest)):
+                        gBest = copy.deepcopy(pBest[i])
 
                 # Compare a new position of a particle x to its pBest
 
@@ -243,9 +242,9 @@ class Function:
 # MAIN
 
 
-solution = Solution(2,-100,100,15,50)
+solution = Solution(2,-10,10,15,50)
 fnc = Function("")
-print(solution.particle_swarm(fnc.schwefel))
+print(solution.particle_swarm(fnc.sphere))
 
 
 
