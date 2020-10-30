@@ -13,14 +13,15 @@ import mpl_toolkits.mplot3d.axes3d as p3
 class Solution:
     def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles):
         self.dimension = dimension
-        self.lB = lower_bound  # we will use the same bounds for all parameters
+        self.lB = lower_bound
         self.uB = upper_bound
-        self.NP = number_of_individuals
-        self.g_maxim = number_of_gen_cycles
-        self.F = 0.5
-        self.CR = 0.5
-        self.parameters = np.zeros(self.dimension)  # solution parameters
-        self.f = np.inf  # objective function evaluation
+        self.pop_size = number_of_individuals
+        self.M_max = number_of_gen_cycles
+        self.c1 = 2
+        self.c2 = 2
+        self.v_mini = -5
+        self.v_maxi = 5
+        self.f = np.inf
 
     def animate(self, i, best_xxs, best_yys, best_zzs, points):
         for j in range(len(best_xxs[0])):
@@ -54,77 +55,87 @@ class Solution:
             best_zzs.append(best_zs)
 
         self.draw(self.lB, self.uB, fnc, ax)
-        # ax.scatter(range(self.lB), range(self.uB))
         for i in range(len(best_xxs[0])):
-            point, = ax.plot(best_xxs[i][0], best_yys[i][0], best_zzs[i][0], 'o')
+            point, = ax.plot([best_xxs[i][0]], [best_yys[i][0]], [best_zzs[i][0]], 'o')
             points.append(point)
         animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=30,
                                           repeat=False)
         plt.show()
 
-    def differential_evolution(self, fnc):
-        def take_care_for_boundaries(vector):
-            for i in range(len(vector)):
-                if(vector[i] > self.uB):
-                    vector[i] = self.uB
-                elif (vector[i] < self.lB):
-                    vector[i] = self.lB
+    def particle_swarm(self, fnc):
 
-        draw_evolution = []
-        pop = self.generateNeighboursUniform()
-        g = 0
+        swarm = self.generatePopulationUniform()
+        gBest = self.getPersonalBest(swarm, fnc)
+        pBest = copy.deepcopy(gBest)
+        velocity = self.generateSwarmVelocity()
+        swarmSolution = []
+        m = 0
 
-        while g < self.g_maxim:
-            new_pop = copy.deepcopy(pop)
-            for i, x in enumerate(pop):
-                r1,r2,r3 = 0,0,0
-                while True:
-                    r1 = np.random.randint(0, self.NP)
-                    if(r1 != i):
-                        break
-                while True:
-                    r2 = np.random.randint(0, self.NP)
-                    if (r2 != i and r2 != r1):
-                        break
-                while True:
-                    r3 = np.random.randint(0, self.NP)
-                    if (r3 != i and r3 != r1 and r3 != r2):
-                        break
+        while m < self.M_max:
+            for i in range(len(swarm)):
+                calculatedVelocity = self.recalculateParticleVelocity(velocity[i], swarm[i], pBest, gBest, m)
+                velocity[i] = self.fixBoundaries(calculatedVelocity,self.v_mini, self.v_maxi)
+                calculatedPosition = np.add(swarm[i], velocity[i])
+                swarm[i] = self.fixBoundaries(calculatedPosition,self.lB, self.uB)
 
-                p = (np.subtract(pop[r1], pop[r2]))
-                map(lambda k: k * self.F, p)
-                v = np.add(p, pop[r3])
-                take_care_for_boundaries(v)
+                if(fnc(swarm[i]) < fnc(pBest)):
+                    pBest = swarm[i]
+                    if(fnc(pBest) < fnc(gBest)):
+                        gBest = pBest
 
-                u = np.zeros(self.dimension)  # trial vector
-                j_rnd = np.random.randint(0, self.dimension)
+                # Compare a new position of a particle x to its pBest
 
-                for j in range(self.dimension):
-                    if np.random.uniform() < self.CR or j == j_rnd:
-                        u[j] = v[j]
-                    else:
-                        u[j] = pop[i][j]
-
-                f_u = fnc(u)
-
-                if f_u <= fnc(pop[i]):
-                    new_pop[i] = u
-            pop = new_pop
-            draw_evolution.append(new_pop)
-            g += 1
-
+            swarmSolution.append(copy.deepcopy(swarm))
+            m += 1
         if(self.dimension == 2):
-            self.animateSolution(draw_evolution,fnc)
-        return pop
+            self.animateSolution(swarmSolution, fnc)
 
-    def generateNeighboursUniform(self):
+        return gBest
+
+    def generatePopulationUniform(self):
         p = []
-        for xi in range(self.NP):
+        for xi in range(self.pop_size):
             pi = []
             for i in range(self.dimension):
                 pi.append(np.random.uniform(self.lB,self.uB))
             p.append(pi)
         return p
+
+    def generateSwarmVelocity(self):
+        p = []
+        for xi in range(self.pop_size):
+            pi = []
+            for i in range(self.dimension):
+                pi.append(np.random.uniform(self.v_mini, self.v_maxi))
+            p.append(pi)
+        return p
+
+    def recalculateParticleVelocity(self, velocity, particle, pBest, gBest, i):
+        ws = 0.9
+        we = 0.4
+        r1 = np.random.uniform()
+        w = ws * ((ws-we)*i)/self.M_max
+        newVelocity = np.add(np.add(np.multiply(velocity, w), np.multiply((r1 * self.c1), (np.subtract(pBest, particle)))), np.multiply((r1 * self.c1), (np.subtract(gBest, particle))))
+        return newVelocity
+
+    def getPersonalBest(self, swarm, function):
+        personalBest = function(swarm[0])
+        personalBestIndex = 0
+        for i,particle in enumerate(swarm):
+            particleValue = function(particle)
+            if(personalBest > particleValue):
+                personalBestIndex = i
+                personalBest = particleValue
+
+        return swarm[personalBestIndex]
+
+    def fixBoundaries(self, velocity, min, max):
+        for i in range(len(velocity)):
+            if(velocity[i] < min):
+                velocity[i] = min
+            elif(velocity[i] > max):
+                velocity[i] = max
+        return velocity
 
     def draw(self, min, max, fnc, ax):
         X = np.linspace(min, max, 200)
@@ -132,7 +143,6 @@ class Solution:
         X, Y = np.meshgrid(X, Y)
         Z = fnc([X, Y])
         ax.plot_surface(X, Y, Z, alpha=0.2)
-
 
 class Function:
     def __init__(self, name):
@@ -233,9 +243,9 @@ class Function:
 # MAIN
 
 
-solution = Solution(2,-100,100,10,400)
+solution = Solution(2,-100,100,15,50)
 fnc = Function("")
-solution.differential_evolution(fnc.sphere)
+print(solution.particle_swarm(fnc.schwefel))
 
 
 
