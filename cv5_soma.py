@@ -11,16 +11,15 @@ import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
 
 class Solution:
-    def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles):
+    def __init__(self, dimension, lower_bound, upper_bound):
         self.dimension = dimension
         self.lB = lower_bound
         self.uB = upper_bound
-        self.pop_size = number_of_individuals
-        self.M_max = number_of_gen_cycles
-        self.c1 = 2
-        self.c2 = 2
-        self.v_mini = -1
-        self.v_maxi = 1
+        self.PRT = 0.4
+        self.pop_size = 20
+        self.path_length = 3.0
+        self.M_max = 100
+        self.step = 0.11
         self.f = np.inf
 
     def animate(self, i, best_xxs, best_yys, best_zzs, points):
@@ -58,42 +57,61 @@ class Solution:
         for i in range(len(best_xxs[0])):
             point, = ax.plot([best_xxs[i][0]], [best_yys[i][0]], [best_zzs[i][0]], 'o')
             points.append(point)
-        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=100,
+        animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=300,
                                           repeat=False)
         plt.show()
 
-    def particle_swarm(self, fnc):
-        swarm = self.generatePopulationUniform()
-        gBest = self.getPersonalBest(swarm, fnc)
-        pBest = copy.deepcopy(swarm)
-        velocity = self.generateSwarmVelocity()
-        swarmSolution = []
+    def self_organazing_migrating_algorithm(self, fnc):
+        #check boundaries
+        population = self.generatePopulationUniform()
+        leader = self.getLeader(population, fnc)
+        populationSolution = []
         m = 0
-
         while m < self.M_max:
-            for i in range(len(swarm)):
-                velocity[i] = self.recalculateParticleVelocity(velocity[i], swarm[i], pBest[i], gBest, m)
-                swarm[i] = self.fixBoundaries(np.add(swarm[i], velocity[i]), self.lB, self.uB)
+            leader = self.getLeader(population, fnc)
+            for i in range(len(population)):
+                population[i] = self.recalculateIndividual(population[i], leader, fnc)
 
-                if(fnc(swarm[i]) < fnc(pBest[i])):
-                    pBest[i] = copy.deepcopy(swarm[i])
-                    if(fnc(pBest[i]) < fnc(gBest)):
-                        gBest = copy.deepcopy(pBest[i])
-
-            swarmSolution.append(copy.deepcopy(swarm))
+            populationSolution.append(copy.deepcopy(population))
             m += 1
-
+            print(m)
         if(self.is2D()):
-            self.animateSolution(swarmSolution, fnc)
+            self.animateSolution(populationSolution, fnc)
+        return leader
 
-        return gBest
+
+    def recalculateIndividual(self, individual, leader, fnc):
+        t = 0
+        oldIndividual = copy.deepcopy(individual)
+        newIndividual = copy.deepcopy(individual)
+        partialIndividual = copy.deepcopy(individual)
+        while t < self.path_length:
+            for j in range(self.dimension):
+                rnd = np.random.uniform(0, 1)
+                prtVector = 0
+                if rnd < self.PRT:
+                    prtVector = 1
+
+                # newIndividual[j] = np.add(oldIndividual[j], (np.subtract(leader[j], np.multiply(oldIndividual[j],(t*prtVector)))))
+                newIndividual[j] = np.add(oldIndividual[j], np.multiply(np.subtract(leader[j], oldIndividual[j]), (t*prtVector)))
+
+            newIndividual = self.fixBoundaries(newIndividual)
+
+            if(fnc(newIndividual) < fnc(partialIndividual)):
+                partialIndividual = copy.deepcopy(newIndividual)
+            t += self.step
+
+        if (fnc(partialIndividual) < fnc(oldIndividual)):
+            return partialIndividual
+
+        return oldIndividual
 
     def generatePopulationUniform(self):
         p = []
         for xi in range(self.pop_size):
             pi = []
             for i in range(self.dimension):
-                pi.append(np.random.uniform(self.lB,self.uB))
+                pi.append(np.random.uniform(self.lB, self.uB))
             p.append(pi)
         return p
 
@@ -103,25 +121,7 @@ class Solution:
         else:
             return False
 
-    def generateSwarmVelocity(self):
-        p = []
-        for xi in range(self.pop_size):
-            pi = []
-            for i in range(self.dimension):
-                pi.append(np.random.uniform(self.v_mini, self.v_maxi))
-            p.append(pi)
-        return p
-
-    def recalculateParticleVelocity(self, velocity, particle, pBest, gBest, i):
-        ws = 0.9
-        we = 0.4
-        r1 = np.random.uniform()
-        w = ws * ((ws-we)*i)/self.M_max
-        newVelocity = np.add(np.add(np.multiply(velocity, w), np.multiply((r1 * self.c1), (np.subtract(pBest, particle)))), np.multiply((r1 * self.c1), (np.subtract(gBest, particle))))
-        self.fixBoundaries(newVelocity, self.v_mini, self.v_maxi)
-        return newVelocity
-
-    def getPersonalBest(self, swarm, function):
+    def getLeader(self, swarm, function):
         personalBest = function(swarm[0])
         personalBestIndex = 0
         for i,particle in enumerate(swarm):
@@ -132,13 +132,13 @@ class Solution:
 
         return swarm[personalBestIndex]
 
-    def fixBoundaries(self, velocity, min, max):
-        for i in range(len(velocity)):
-            if(velocity[i] < min):
-                velocity[i] = min
-            elif(velocity[i] > max):
-                velocity[i] = max
-        return velocity
+    def fixBoundaries(self, individual):
+        for j in range(self.dimension):
+            if(individual[j] < self.lB):
+                individual[j] = self.lB
+            elif(individual[j] > self.uB):
+                individual[j] = self.uB
+        return individual
 
     def draw(self, min, max, fnc, ax):
         X = np.linspace(min, max, 200)
@@ -246,9 +246,9 @@ class Function:
 # MAIN
 
 
-solution = Solution(2,-10,10,15,50)
+solution = Solution(2,-100,100)
 fnc = Function("")
-print(solution.particle_swarm(fnc.sphere))
+print(solution.self_organazing_migrating_algorithm(fnc.schwefel))
 
 
 
