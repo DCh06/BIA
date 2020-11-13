@@ -62,7 +62,6 @@ class Solution:
         plt.show()
 
     def self_organazing_migrating_algorithm(self, fnc):
-        #check boundaries
         population = self.generatePopulationUniform()
         leader = self.getLeader(population, fnc)
         populationSolution = []
@@ -74,7 +73,6 @@ class Solution:
 
             populationSolution.append(copy.deepcopy(population))
             m += 1
-            print(m)
         if(self.is2D()):
             self.animateSolution(populationSolution, fnc)
         return leader
@@ -92,7 +90,6 @@ class Solution:
                 if rnd < self.PRT:
                     prtVector = 1
 
-                # newIndividual[j] = np.add(oldIndividual[j], (np.subtract(leader[j], np.multiply(oldIndividual[j],(t*prtVector)))))
                 newIndividual[j] = np.add(oldIndividual[j], np.multiply(np.subtract(leader[j], oldIndividual[j]), (t*prtVector)))
 
             newIndividual = self.fixBoundaries(newIndividual)
@@ -246,9 +243,9 @@ class Function:
 # MAIN
 
 
-solution = Solution(2,-100,100)
+solution = Solution(2,-5,5)
 fnc = Function("")
-print(solution.self_organazing_migrating_algorithm(fnc.schwefel))
+print(solution.self_organazing_migrating_algorithm(fnc.sphere))
 
 
 
