@@ -118,7 +118,7 @@ class Solution:
     def __update_pheromones(self):
         for i in range(len(self.pheromonMatrix)):
             for j in range(len(self.pheromonMatrix[i])):
-                self.pheromonMatrix[i][j] = 1 - self.ro
+                self.pheromonMatrix[i][j] *= self.ro
         for antPath in self.antsPath:
             distance = self.__get_distance_of_path(antPath)
             self.__update_feromones_based_on_ant_path(distance, antPath)
@@ -211,6 +211,5 @@ class Solution:
 #MAIN
 solution = Solution(1000,15)
 solution.ACO()
-# solution.animateSolution()
 
 
