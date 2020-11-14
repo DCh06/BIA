@@ -7,14 +7,16 @@ from matplotlib.animation import FuncAnimation
 class City:
     def __init__(self, city_name):
         self.city_name = city_name
-        self.x = random.uniform(0, 500)
-        self.y = random.uniform(0, 500)
+        self.x = random.uniform(0, 10)
+        self.y = random.uniform(0, 10)
 
 class Solution:
-    def __init__(self, NP, G, D):
-        self.NP = NP
+    def __init__(self, G, D):
         self.G = G
         self.D = D
+        self.alpha = 1
+        self.beta = 2
+        self.ro = 0.5
         self.cities = ['Brno', 'Paris', 'Prague', 'Olomouc', 'Moskva', 'Berlin', 'Bern', 'Essen', 'Stockholm', 'Helsinki',
                        'Oslo', 'Washington D.C.', 'Ankara',
                        'Haag', 'Hamburg', 'Vratimov', 'Paskov', 'Ostrava', 'Frydek-Mistek', 'Opava', 'Senov', 'Havirov',
@@ -24,6 +26,7 @@ class Solution:
         self.distanceMatrix = self.__get_distance_matrix()
         self.pheromonMatrix = self.__get_pheromon_matrix()
         self.visibilityMatrix = self.__get_visibility_matrix()
+        self.antsPath = self.__choose_starting_city()
 
         # self.new_population = []
         self.best_solution_of_generations = []
@@ -41,7 +44,7 @@ class Solution:
 
     def __get_distance(self, city1, city2):
         distance = 0
-        distance += np.sqrt((city1.x - city2.x) ** 2 + (city1.y - city2.y) ** 2)
+        distance = np.sqrt((city1.x - city2.x) ** 2 + (city1.y - city2.y) ** 2)
         return distance
 
     def __get_distance_matrix(self):
@@ -67,26 +70,122 @@ class Solution:
                     visibility_row.append(0)
             visibility_matrix.append(visibility_row)
         return visibility_matrix
+    # end init
 
-    def __get_best_in_generation(self):
-        # best_in_gen = self.population[0]
-        # for i in range(1, len(self.population) - 1):
-        #     if(self.__get_distance(best_in_gen) > self.__get_distance(self.population[i])):
-        #         best_in_gen = self.population[i]
-        # return best_in_gen
-        pass
+    def __choose_starting_city(self):
+        ant_start_array = []
+        for i in range(self.D):
+            ant_start_array.append([np.random.randint(self.D)])
+        return ant_start_array
 
-    def animate(self, i, best_xs,best_ys, line):
+    def calculate_ant_path(self, ant_id):
+        copy_visibility_matrix = copy.deepcopy(self.visibilityMatrix)
+        self.recalculate_copy_of_visibility_matrix(copy_visibility_matrix, ant_id)
+        for city_id in range(len(self.generated_cities)-1):
+            self.antsPath[ant_id].append(self.__next_visited_node(ant_id, copy_visibility_matrix))
+            self.recalculate_copy_of_visibility_matrix(copy_visibility_matrix, ant_id)
+        self.antsPath[ant_id].append(self.antsPath[ant_id][0])
+
+    def recalculate_copy_of_visibility_matrix(self, visibility_matrix, ant_id):
+        last_idx = len(self.antsPath[ant_id]) - 1
+        current_city = self.antsPath[ant_id][last_idx]
+        for i,row in enumerate(visibility_matrix):
+            visibility_matrix[i][current_city] = 0
+
+    def __next_visited_node(self, ant_id, visibility_matrix):
+        city_probability = self.get_city_probability(ant_id, visibility_matrix)
+        current_probability = 0
+        r = np.random.uniform()
+        for i, probability in enumerate(city_probability):
+            current_probability += probability
+            if(r < current_probability):
+                return i
+        return len(visibility_matrix)-1
+
+    def get_city_probability(self, ant_id, visibility_matrix):
+        city_probability = []
+        last_idx = len(self.antsPath[ant_id]) - 1
+        current_city = self.antsPath[ant_id][last_idx]
+        sum_of_probabilities = 0
+        for city_on_row in range(len(self.visibilityMatrix[current_city])):
+            sum_of_probabilities += (self.pheromonMatrix[current_city][city_on_row]**self.alpha)*(visibility_matrix[current_city][city_on_row]**self.beta)
+
+        for city_on_row in range(len(self.visibilityMatrix[current_city])):
+            x = (self.pheromonMatrix[current_city][city_on_row]**self.alpha)*(visibility_matrix[current_city][city_on_row]**self.beta)
+            city_probability.append(x/sum_of_probabilities)
+        return city_probability
+
+    def __update_pheromones(self):
+        for i in range(len(self.pheromonMatrix)):
+            for j in range(len(self.pheromonMatrix[i])):
+                self.pheromonMatrix[i][j] = 1 - self.ro
+        for antPath in self.antsPath:
+            distance = self.__get_distance_of_path(antPath)
+            self.__update_feromones_based_on_ant_path(distance, antPath)
+
+    def __get_distance_of_path(self, antPath):
+        distance = 0
+        for idx in range(len(antPath) - 1):
+            i = antPath[idx]
+            j = antPath[idx + 1]
+            distance += self.distanceMatrix[i][j]
+        return distance
+
+    def __update_feromones_based_on_ant_path(self, distance, antPath):
+        for idx in range(len(antPath) - 1):
+            i = antPath[idx]
+            j = antPath[idx + 1]
+            self.pheromonMatrix[i][j] += 1/distance
+
+    def __get_index_of_best_ant(self, best_eval):
+        best_ant_idx = 0
+        for i in range(1, len(self.antsPath)):
+            if(self.__get_distance_of_path(self.antsPath[best_ant_idx]) > self.__get_distance_of_path(self.antsPath[i])):
+                best_ant_idx = i
+        return i
+
+    def ACO(self):
+        best_solutions = []
+        best_evals = []
+        best_eval = np.inf
+        curr_G = 0
+        while self.G > curr_G:
+            for ant_id in range(self.D):
+                self.calculate_ant_path(ant_id)
+            self.__update_pheromones()
+            best_ant_idx = self.__get_index_of_best_ant(best_eval)
+            best_current_eval = self.__get_distance_of_path(self.antsPath[best_ant_idx])
+            if(best_eval > best_current_eval):
+                best_eval = best_current_eval
+                best_solutions.append(copy.deepcopy(self.antsPath[best_ant_idx]))
+                best_evals.append(best_eval)
+            self.antsPath = self.__choose_starting_city()
+
+            print("Generation:", curr_G)
+
+            curr_G += 1
+
+        self.animateSolution(best_solutions, best_evals)
+
+    def animate(self, i, best_xs,best_ys, line, text, best_evals):
         x = best_xs[i]
         y = best_ys[i]
         line.set_xdata(x)
         line.set_ydata(y)
+        text.set_text(best_evals[i])
 
-    def animateSolution(self):
+    def animateSolution(self, best_solutions_idx, best_evals):
         fig, ax = plt.subplots()
         best_xs = []
         best_ys = []
-        for best_solution in self.best_solution_of_generations:
+        best_solutions_cities = []
+        for row_idx in best_solutions_idx:
+            best_solution_cities = []
+            for idx in row_idx:
+                best_solution_cities.append(self.generated_cities[idx])
+            best_solutions_cities.append(best_solution_cities)
+
+        for best_solution in best_solutions_cities:
             ys = [best_solution[i].y for i in range(len(best_solution))]
             xs = [best_solution[i].x for i in range(len(best_solution))]
             ys.append(best_solution[0].y)
@@ -99,46 +198,19 @@ class Solution:
         for c in self.generated_cities:
             plt.annotate(c.city_name, (c.x, c.y), textcoords="offset points", xytext=(0, 10))
 
+        text = plt.text(0.95, 0.01, best_evals[0],
+                verticalalignment='bottom', horizontalalignment='right',
+                transform=ax.transAxes,
+                color='green', fontsize=8)
+
         line, = ax.plot(best_xs[0], best_ys[0])
-        animate = FuncAnimation(fig, self.animate, len(best_xs), fargs=(best_xs,best_ys, line), interval=300,
+        animate = FuncAnimation(fig, self.animate, len(best_xs), fargs=(best_xs,best_ys, line, text, best_evals), interval=500,
                                       repeat=False)
         plt.show()
 
-    def ant_colony(self):
-        pass
-
-    # def genetic_algorithm(self):
-    #     minimum = self.__get_distance(self.population[0])
-    #     for i in range(self.G):
-    #         self.new_population = copy.deepcopy(self.population)
-    #
-    #         for j in range(self.NP):
-    #             random_B = random.randint(0, len(self.population[j]) - 1)
-    #             while(random_B == j):
-    #                 random_B = random.randint(0, len(self.population[j]) - 1)
-    #
-    #             parent_A = self.population[j]
-    #             parent_B = self.population[random_B]
-    #
-    #             offspring_AB = self.__crossover(parent_A, parent_B)
-    #             if np.random.uniform() < 0.5:
-    #                 offspring_AB = self.__mutate(offspring_AB)
-    #
-    #             if(self.__get_distance(offspring_AB) < self.__get_distance(parent_A)):
-    #                 self.new_population[j] = offspring_AB
-    #
-    #         self.population = copy.deepcopy(self.new_population)
-    #         try_min = self.__get_distance(self.__get_best_in_generation())
-    #         if(minimum > try_min):
-    #             minimum = try_min
-    #             print(i)
-    #             self.best_solution_of_generations.append(self.__get_best_in_generation())
-
-
-
 #MAIN
-solution = Solution(20,1000,10)
-solution.ant_colony()
+solution = Solution(1000,15)
+solution.ACO()
 # solution.animateSolution()
 
 
