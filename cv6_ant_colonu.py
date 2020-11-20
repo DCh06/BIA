@@ -209,7 +209,7 @@ class Solution:
         plt.show()
 
 #MAIN
-solution = Solution(1000,15)
+solution = Solution(100,15)
 solution.ACO()
 
 
