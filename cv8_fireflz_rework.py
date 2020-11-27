@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
 
 class Solution:
-    def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles):
+    def __init__(self, dimension, lower_bound, upper_bound, number_of_individuals, number_of_gen_cycles, fncObject):
         self.dimension = dimension
         self.lB = lower_bound  # we will use the same bounds for all parameters
         self.uB = upper_bound
@@ -21,6 +21,7 @@ class Solution:
         self.alpha = 0.3
         self.parameters = np.zeros(self.dimension)  # solution parameters
         self.f = np.inf  # objective function evaluation
+        self.fncObject = fncObject
 
     def animate(self, i, best_xxs, best_yys, best_zzs, points):
         for j in range(len(best_xxs[0])):
@@ -66,7 +67,7 @@ class Solution:
         best_firefly_index = self.getBestFireflyIndex(fireflies, fnc)
         best_evals = []
         t = 0
-        while t < self.g_maxim:
+        while self.fncObject.getEvals() < 3000:
             for i in range(self.NP):
                 for j in range(self.NP):
                     if(i == j or i == best_firefly_index):
@@ -84,7 +85,7 @@ class Solution:
             t += 1
         if (self.dimension == 2):
             self.animateSolution(best_evals, fnc)
-        return best_evals
+        return fireflies
 
 
     def getBestFireflyIndex(self, population, fnc):
@@ -151,17 +152,40 @@ class Solution:
         ax.plot_surface(X, Y, Z, alpha=0.2)
 
 
+def getBest(population, fnc):
+    bestEval = fnc(population[0])
+
+    for x in population:
+        tryBest = fnc(x)
+        if(tryBest < bestEval):
+            bestEval = tryBest
+    return bestEval
+
+# MAIN
+
+
+# solution = Solution(2,-10,10,5,500)
+# fnc = Function("")
+# solution.firefly(fnc.sphere)
+
+# MAIN
 class Function:
     def __init__(self, name):
         self.name = name
+        self.numberOfEvaluations = 0
+
+    def getEvals(self):
+        return self.numberOfEvaluations
 
     def sphere(self, params):
+        self.numberOfEvaluations += 1
         z = 0
         for xi in params:
             z += xi ** 2
         return z
 
     def schwefel(self, params):
+        self.numberOfEvaluations += 1
         z = 0
         dim = len(params)
 
@@ -170,6 +194,7 @@ class Function:
         return 418.9829 * dim - z
 
     def rosenbrock(self, params):
+        self.numberOfEvaluations += 1
         z = 0
         counter = 0
         dim = len(params)
@@ -181,6 +206,7 @@ class Function:
         return z
 
     def rastrigin(self, params):
+        self.numberOfEvaluations += 1
         z = 0
         dim = len(params)
         for xi in params:
@@ -188,6 +214,7 @@ class Function:
         return 10 * dim + z
 
     def griewank(self, params):
+        self.numberOfEvaluations += 1
         counter = 1
         z = 0
         z2 = 1
@@ -198,6 +225,7 @@ class Function:
         return z - z2 + 1
 
     def levy(self, params):
+        self.numberOfEvaluations += 1
         def w(x):
             return 1 + (x - 1) / 4
 
@@ -213,6 +241,7 @@ class Function:
         return np.sin(np.pi * w(params[0])) ** 2 + z
 
     def michalewicz(self, params):
+        self.numberOfEvaluations += 1
         m = 10
         z = 0
         counter = 1
@@ -222,6 +251,7 @@ class Function:
         return -z
 
     def zakharov(self, params):
+        self.numberOfEvaluations += 1
         z = 0
         z2 = 0
         z3 = 0
@@ -235,6 +265,7 @@ class Function:
         return z + z2 ** 2 + z3 ** 4
 
     def ackley(self, params):
+        self.numberOfEvaluations += 1
         a = 20
         b = 0.3
         c = np.pi / 3
@@ -247,12 +278,136 @@ class Function:
             z2 += np.cos(c * xi)
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
-# MAIN
+bestEvals = ""
+# print(solved)
+
+print("sphere")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.sphere
+    testFnc = fnc
+    solution = Solution(30, -5, 5, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("sphere.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("Schwefel...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.schwefel
+    testFnc = fnc
+    solution = Solution(30, -500, 500, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("schwefel.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("rosenbrock...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.rosenbrock
+    testFnc = fnc
+    solution = Solution(30, -5, 10, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("rosenbrock.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("rastrigin...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.rastrigin
+    testFnc = fnc
+    solution = Solution(30, -5.12, 5.12, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("rastrigin.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("griewank...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.griewank
+    testFnc = fnc
+    solution = Solution(30, -600, 600, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("griewank.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("levy...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.levy
+    testFnc = fnc
+    solution = Solution(30, -10, 10, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("levy.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("michalewicz...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.michalewicz
+    testFnc = fnc
+    solution = Solution(30, 0, np.pi, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("michalewicz.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("zakharov...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.zakharov
+    testFnc = fnc
+    solution = Solution(30, -5, 10, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("zakharov.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("ackley...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.ackley
+    testFnc = fnc
+    solution = Solution(30, -32.768, 32.768, 30, 500, fnc)
+    solved = solution.firefly(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("ackley.csv", "w")
+f.write(bestEvals)
+f.close()
 
 
-solution = Solution(2,-10,10,5,500)
-fnc = Function("")
-solution.firefly(fnc.sphere)
+
 
 
 
