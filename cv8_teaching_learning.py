@@ -85,9 +85,10 @@ class Solution:
                     xNew = np.add(population[i], np.multiply(r, np.subtract(population[i], population[j])))
                 else:
                     xNew = np.add(population[i], np.multiply(r, np.subtract(population[j], population[i])))
+
+                self.checkBoundaries(xNew)
                 if(fnc(xNew) < fnc(population[i])):
                     population[i] = np.ndarray.tolist(xNew)
-                    self.checkBoundaries(population[i])
 
             solutions.append(copy.deepcopy(population))
             t += 1
@@ -117,7 +118,8 @@ class Solution:
         teacherCopy = copy.deepcopy(population[teacherIndex])
         r = np.random.uniform(0,1)
         tf = np.random.randint(1,3)
-        teacherCopy = np.multiply(r, np.subtract(teacherCopy, np.multiply(tf, mean)))
+        # teacherCopy = np.multiply(r, np.subtract(teacherCopy, np.multiply(tf, mean)))
+        teacherCopy = np.add(teacherCopy, np.multiply(r, np.subtract(teacherCopy, np.multiply(tf, mean))))
         self.checkBoundaries(teacherCopy)
         if(fnc(teacherCopy) < fnc(population[teacherIndex])):
             population[teacherIndex] = np.ndarray.tolist(teacherCopy)
@@ -266,135 +268,137 @@ def getBest(population, fnc):
     return bestEval
 
 fnc = Function("")
-testFnc = fnc
-solution = Solution(2,-10,10,5,500, fnc)
-solved = solution.teachNLearn(fnc.sphere)
+# testFnc = fnc
+# solution = Solution(2,-500,500,5,500, fnc)
+# solved = solution.teachNLearn(fnc.schwefel)
 bestEvals = ""
+
+
 # print(solved)
-# print("sphere")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.sphere
-#     testFnc = fnc
-#     solution = Solution(30, -5, 5, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("sphere.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("Schwefel...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.schwefel
-#     testFnc = fnc
-#     solution = Solution(30, -500, 500, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("schwefel.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("rosenbrock...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.rosenbrock
-#     testFnc = fnc
-#     solution = Solution(30, -5, 10, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("rosenbrock.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("rastrigin...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.rastrigin
-#     testFnc = fnc
-#     solution = Solution(30, -5.12, 5.12, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("rastrigin.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("griewank...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.griewank
-#     testFnc = fnc
-#     solution = Solution(30, -600, 600, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("griewank.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("levy...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.levy
-#     testFnc = fnc
-#     solution = Solution(30, -10, 10, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("levy.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("michalewicz...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.michalewicz
-#     testFnc = fnc
-#     solution = Solution(30, 0, np.pi, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("michalewicz.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("zakharov...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.zakharov
-#     testFnc = fnc
-#     solution = Solution(30, -5, 10, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("zakharov.csv", "w")
-# f.write(bestEvals)
-# f.close()
-#
-# bestEvals = ""
-# print("ackley...")
-# for i in range(30):
-#     fnc = Function("")
-#     goFnc = fnc.ackley
-#     testFnc = fnc
-#     solution = Solution(30, -32.768, 32.768, 30, 500, fnc)
-#     solved = solution.teachNLearn(goFnc)
-#     bestEvals += str(getBest(solved, goFnc)) + "\n"
-#
-# f = open("ackley.csv", "w")
-# f.write(bestEvals)
-# f.close()
+print("sphere")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.sphere
+    testFnc = fnc
+    solution = Solution(30, -5, 5, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("sphere.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("Schwefel...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.schwefel
+    testFnc = fnc
+    solution = Solution(30, -500, 500, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("schwefel.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("rosenbrock...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.rosenbrock
+    testFnc = fnc
+    solution = Solution(30, -5, 10, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("rosenbrock.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("rastrigin...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.rastrigin
+    testFnc = fnc
+    solution = Solution(30, -5.12, 5.12, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("rastrigin.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("griewank...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.griewank
+    testFnc = fnc
+    solution = Solution(30, -600, 600, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("griewank.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("levy...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.levy
+    testFnc = fnc
+    solution = Solution(30, -10, 10, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("levy.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("michalewicz...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.michalewicz
+    testFnc = fnc
+    solution = Solution(30, 0, np.pi, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("michalewicz.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("zakharov...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.zakharov
+    testFnc = fnc
+    solution = Solution(30, -5, 10, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("zakharov.csv", "w")
+f.write(bestEvals)
+f.close()
+
+bestEvals = ""
+print("ackley...")
+for i in range(30):
+    fnc = Function("")
+    goFnc = fnc.ackley
+    testFnc = fnc
+    solution = Solution(30, -32.768, 32.768, 30, 500, fnc)
+    solved = solution.teachNLearn(goFnc)
+    bestEvals += str(getBest(solved, goFnc)) + "\n"
+
+f = open("ackley.csv", "w")
+f.write(bestEvals)
+f.close()
 
 
 
