@@ -52,8 +52,6 @@ class Individual:
         self.h = arr[1]
         self.reevaluate()
 
-
-
 class Solution:
     def __init__(self, number_of_individuals, number_of_gen_cycles, fncObject):
         self.NP = number_of_individuals
@@ -63,7 +61,6 @@ class Solution:
         self.S = []
         self.n = []
 
-
     def nondominatedsort(self, fnc):
         population = []
         gen = 0
@@ -72,6 +69,7 @@ class Solution:
         allSolutions = []
         paretoSetBestSolutionsOfGenerations = []
         while(gen < self.g_maxim):
+
             self.Q = []
             self.S = []
             self.n = []
@@ -88,12 +86,6 @@ class Solution:
                         (population[i].Sarea < population[j].Sarea and population[i].Tarea <= population[j].Tarea)):
                         population[i].S.append(j)
 
-                    # if((population[i].Sarea <= population[j].Sarea and population[i].Tarea > population[j].Tarea) or
-                    #         (population[i].Sarea < population[j].Sarea and population[i].Tarea >= population[j].Tarea)):
-                    #     population[i].n += 1
-                    # elif ((population[i].Sarea >= population[j].Sarea and population[i].Tarea < population[j].Tarea) or
-                    #     (population[i].Sarea > population[j].Sarea and population[i].Tarea <= population[j].Tarea)):
-                    #     population[i].S.append(j)
 
             self.getSolutonSN(population)
             self.getSolutionQ()
@@ -102,23 +94,19 @@ class Solution:
             population = self.getNPforNextGen(population)
 
             gen += 1
-            print(gen)
-        paretoSetBestSolutionsOfGenerations = population
+        paretoSetBestSolutionsOfGenerations = self.createParetoSolution(copyOfPop)
         self.drawParetoSet(paretoSetBestSolutionsOfGenerations, allSolutions)
 
     def createParetoSolution(self, population):
-        arr = []
         helpArr = []
         for idx,x in enumerate(self.Q):
-            if(idx == 1 or idx == 2):
-                helpArr = []
-            for i in x:
-                helpArr.append(population[i])
-            if(idx == 0 or idx == 1):
-                arr.append(helpArr)
-        arr.append(helpArr)
-
-        return copy.deepcopy(arr)
+            if(idx == 0):
+                for i in x:
+                    print("x:", x)
+                    print(i)
+                    helpArr.append(population[i])
+            break
+        return helpArr
 
     def getNPforNextGen(self, population):
         counter = 0
@@ -161,10 +149,8 @@ class Solution:
 
     def generatePopulation(self):
         population = []
-        # arr = [[2,8],[1,4],[7,15],[1,2],[5,6],[3,15],[8,15],[4,1],[8,2],[5,5]]
         for i in range(self.NP):
             population.append(Individual(self.fncObject))
-            # population[i].refactorIndividual(arr[i])
         return population
 
     def getSolutonSN(self, population):
@@ -333,6 +319,6 @@ class Function:
 
 fnc = Function("")
 testFnc = fnc
-solution = Solution(10, 40, fnc)
+solution = Solution(10, 100, fnc)
 solved = solution.nondominatedsort(fnc.schwefel)
 bestEvals = ""
