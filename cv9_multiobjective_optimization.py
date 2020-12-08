@@ -22,16 +22,36 @@ class Individual:
 
     def evaluateT(self):
         x = self.functions.totalSurface(self.h, self.r)
-        return x
+        return np.round(x)
 
     def evaluateS(self):
-        return self.functions.lateralSurface(self.h, self.r)
+        return np.round(self.functions.lateralSurface(self.h, self.r))
 
     def generateHeight(self):
-        return np.random.uniform(0, 20)
+        return np.random.uniform(0.001, 20)
 
     def generateRadius(self):
-        return np.random.uniform(0, 10)
+        return np.random.uniform(0.001, 10)
+
+    def reevaluate(self):
+        self.Tarea = self.functions.totalSurface(self.h, self.r)
+        self.Sarea = self.functions.lateralSurface(self.h, self.r)
+
+    def fixBoundaries(self):
+        if(self.h > 20 or self.h < 0 ):
+            self.h = np.random.uniform(0.001, 20)
+        if(self.r > 10 or self.r < 0 ):
+            self.r = np.random.uniform(0.001, 10)
+
+    def resetIndividual(self):
+        self.S = []
+        self.n = 0
+
+    def refactorIndividual(self, arr):
+        self.r = arr[0]
+        self.h = arr[1]
+        self.reevaluate()
+
 
 
 class Solution:
@@ -43,95 +63,109 @@ class Solution:
         self.S = []
         self.n = []
 
-    # def animate(self, i, best_xxs, best_yys, best_zzs, points):
-    #     for j in range(len(best_xxs[0])):
-    #         x = best_xxs[i][j]
-    #         y = best_yys[i][j]
-    #         z = best_zzs[i][j]
-    #
-    #         points[j].set_data(np.array([x, y]))
-    #         points[j].set_3d_properties(z, 'z')
-    #     return points
-    #
-    # def animateSolution(self, best_solutions, fnc):
-    #     fig = plt.figure()
-    #     ax = p3.Axes3D(fig)
-    #
-    #     best_xxs = []
-    #     best_yys = []
-    #     best_zzs = []
-    #     points = []
-    #
-    #     for best_solution in best_solutions:
-    #         best_xs = []
-    #         best_ys = []
-    #         best_zs = []
-    #         for i in range(len(best_solution)):
-    #             best_xs.append(best_solution[i][0])
-    #             best_ys.append(best_solution[i][1])
-    #             best_zs.append(fnc([best_solution[i][0], best_solution[i][1]]))
-    #         best_xxs.append(best_xs)
-    #         best_yys.append(best_ys)
-    #         best_zzs.append(best_zs)
-    #     print(len(best_xxs[0]), len(best_yys[0]), len(best_zzs[0]))
-    #
-    #     self.draw(self.lB, self.uB, fnc, ax)
-    #     for i in range(len(best_xxs[0])):
-    #         point, = ax.plot([best_xxs[i][0]], [best_yys[i][0]], [best_zzs[i][0]], 'o')
-    #         points.append(point)
-    #     animate = animation.FuncAnimation(fig, self.animate, len(best_xxs), fargs=(best_xxs, best_yys, best_zzs, points), interval=30,
-    #                                       repeat=False)
-    #     plt.show()
-    # def checkBoundaries(self, learner):
-    #     for i in range(self.dimension):
-    #         if(learner[i] > self.uB):
-    #             learner[i] = self.uB
-    #         if(learner[i] < self.lB):
-    #             learner[i] = self.lB
-    #
-    # def draw(self, min, max, fnc, ax):
-    #     X = np.linspace(min, max, 200)
-    #     Y = np.linspace(min, max, 200)
-    #     X, Y = np.meshgrid(X, Y)
-    #     Z = fnc([X, Y])
-    #     ax.plot_surface(X, Y, Z, alpha=0.2)
 
-
-    def teachNLearn(self, fnc):
+    def nondominatedsort(self, fnc):
         population = []
+        gen = 0
         population = self.generatePopulation()
+        copyOfPop = []
+        allSolutions = []
+        paretoSetBestSolutionsOfGenerations = []
+        while(gen < self.g_maxim):
+            self.Q = []
+            self.S = []
+            self.n = []
+            self.geneticsAlgorithm(population)
+            for i in range(self.NP*2):
+                population[i].resetIndividual()
+                for j in range(self.NP*2):
+                    if(i == j):
+                        continue
+                    if((population[i].Sarea >= population[j].Sarea and population[i].Tarea > population[j].Tarea)
+                            or (population[i].Sarea > population[j].Sarea and population[i].Tarea >= population[j].Tarea)):
+                        population[i].n += 1
+                    elif ((population[i].Sarea <= population[j].Sarea and population[i].Tarea < population[j].Tarea) or
+                        (population[i].Sarea < population[j].Sarea and population[i].Tarea <= population[j].Tarea)):
+                        population[i].S.append(j)
 
+                    # if((population[i].Sarea <= population[j].Sarea and population[i].Tarea > population[j].Tarea) or
+                    #         (population[i].Sarea < population[j].Sarea and population[i].Tarea >= population[j].Tarea)):
+                    #     population[i].n += 1
+                    # elif ((population[i].Sarea >= population[j].Sarea and population[i].Tarea < population[j].Tarea) or
+                    #     (population[i].Sarea > population[j].Sarea and population[i].Tarea <= population[j].Tarea)):
+                    #     population[i].S.append(j)
+
+            self.getSolutonSN(population)
+            self.getSolutionQ()
+            copyOfPop = copy.deepcopy(population)
+            allSolutions.append(copyOfPop)
+            population = self.getNPforNextGen(population)
+
+            gen += 1
+            print(gen)
+        paretoSetBestSolutionsOfGenerations = population
+        self.drawParetoSet(paretoSetBestSolutionsOfGenerations, allSolutions)
+
+    def createParetoSolution(self, population):
+        arr = []
+        helpArr = []
+        for idx,x in enumerate(self.Q):
+            if(idx == 1 or idx == 2):
+                helpArr = []
+            for i in x:
+                helpArr.append(population[i])
+            if(idx == 0 or idx == 1):
+                arr.append(helpArr)
+        arr.append(helpArr)
+
+        return copy.deepcopy(arr)
+
+    def getNPforNextGen(self, population):
+        counter = 0
+        newPop = []
+        for idx, x in enumerate(self.Q):
+            for i in x:
+                newPop.append(population[i])
+                counter += 1
+                if(counter >= self.NP):
+                    break
+            if (counter >= self.NP):
+                break
+        return copy.deepcopy(newPop)
+
+    def geneticsAlgorithm(self, population):
         for i in range(self.NP):
-            for j in range(self.NP):
-                if(i == j):
-                    continue
-                if((population[i].Sarea >= population[j].Sarea and population[i].Tarea > population[j].Tarea)
-                        or (population[i].Sarea > population[j].Sarea and population[i].Tarea >= population[j].Tarea)):
-                    population[i].n += 1
-                elif (population[i].Sarea < population[j].Sarea and population[i].Tarea < population[j].Tarea):
-                    population[i].S.append(j)
+            newIndividual = Individual(self.fncObject)
+            randomIndex = self.getDifferentRandom(i)
+            #cross
+            if np.random.uniform() < 0.5:
+                newIndividual.h =  np.divide(np.add(population[i].h, population[randomIndex].h), 2)
+                newIndividual.r =  np.divide(np.add(population[i].r, population[randomIndex].r), 2)
+            else:
+                newIndividual.h = np.divide(np.subtract(population[i].h, population[randomIndex].h), 2)
+                newIndividual.r = np.divide(np.subtract(population[i].h, population[randomIndex].r), 2)
 
-        self.getSolutonSN(population)
-        self.getSolutionQ()
-        print()
+            if np.random.uniform() < 0.5:
+                newIndividual.h = np.add(newIndividual.h, np.random.uniform(0, 1))  # cross – list of parameters
+                newIndividual.r = np.add(newIndividual.r, np.random.uniform(0, 1))  # cross – list of parameters
 
-    def geneticsAlgorithm(self):
-        # for i in range(self.NP):
-        #     if np.random.uniform() < 0.5:
-        #         return (solution1.params + solution2.params) / 2
-        #     else:
-        #         return (solution1.params – solution2.params) / 2
-        #
-        #     if np.random.uniform() < 0.5:
-        #         return cross + np.random.uniform(0, 1, dimension)  # cross – list of parameters
-        #     else:
-        #         return cross
+            newIndividual.fixBoundaries()
+            newIndividual.reevaluate()
+            population.append(newIndividual)
+
+    def getDifferentRandom(self, index):
+        newIndex = index
+        while(newIndex == index):
+            newIndex = np.random.randint(0, self.NP)
+        return newIndex
 
     def generatePopulation(self):
-        populaltion = []
+        population = []
+        # arr = [[2,8],[1,4],[7,15],[1,2],[5,6],[3,15],[8,15],[4,1],[8,2],[5,5]]
         for i in range(self.NP):
-            populaltion.append(Individual(self.fncObject))
-        return populaltion
+            population.append(Individual(self.fncObject))
+            # population[i].refactorIndividual(arr[i])
+        return population
 
     def getSolutonSN(self, population):
         for x in population:
@@ -143,7 +177,7 @@ class Solution:
         checked = []
         while(counter > 0):
             partQ = []
-            for i in range(self.NP):
+            for i in range(self.NP*2):
                 if(self.n[i] == 0 and i not in checked):
                     partQ.append(i)
                     checked.append(i)
@@ -152,6 +186,28 @@ class Solution:
                 for i in self.S[x]:
                     self.n[i] -= 1
             counter = sum(self.n)
+
+    def drawParetoSet(self, bestParetoSets, allSolutions):
+        set1x = []
+        set1y = []
+        set2x = []
+        set2y = []
+
+        for i,x in enumerate(bestParetoSets):
+                set1x.append(x.r)
+                set1y.append(x.h)
+
+        for i,xx in enumerate(allSolutions):
+            for indiv in xx:
+                set2x.append(indiv.r)
+                set2y.append(indiv.h)
+
+        plt.scatter(set2x, set2y, color='blue')
+        plt.scatter(set1x, set1y, color='green', label="Last population")
+        plt.xlabel("radius")
+        plt.ylabel("height")
+        plt.legend()
+        plt.show()
 
 
 
@@ -275,11 +331,8 @@ class Function:
             z2 += np.cos(c * xi)
         return -a * np.exp(-b * np.sqrt((1 / dim) * z)) - np.exp((1 / dim) * z2) + a + np.exp(1)
 
-# MAIN
-
-
 fnc = Function("")
 testFnc = fnc
-solution = Solution(10, 500, fnc)
-solved = solution.teachNLearn(fnc.schwefel)
+solution = Solution(10, 40, fnc)
+solved = solution.nondominatedsort(fnc.schwefel)
 bestEvals = ""
